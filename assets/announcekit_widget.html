@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnnounceKit Widget</title>
+</head>
+<body>
+<div class="announcekit-widget">What's new</div>
+<script>
+    window.announcekit = (window.announcekit || {
+      queue: [],
+      on: function(n, x) { window.announcekit.queue.push([n, x]); },
+      push: function(x) { window.announcekit.queue.push(x); }
+    });
+
+    window.announcekit.push({
+      "widget": "https://announcekit.co/widgets/v2/1XXsR2",
+      "selector": ".announcekit-widget"
+    });
+</script>
+<script async src="https://cdn.announcekit.app/widget-v2.js"></script>
+</body>
+</html>
