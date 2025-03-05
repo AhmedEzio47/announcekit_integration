@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class AnnounceKitWidget extends StatefulWidget {
@@ -15,18 +18,22 @@ class _AnnounceKitWidgetState extends State<AnnounceKitWidget> {
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController(onPermissionRequest: (request) {
-      debugPrint("Requesting permission: $request");
-    })
+    _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (url) {
             debugPrint("Page loading started: $url");
-            _controller.runJavaScript('localStorage.setItem("key", "value");');
           },
           onPageFinished: (url) {
             debugPrint("Page loaded successfully: $url");
+            if (!url.startsWith('about:')) {
+              _controller
+                  .runJavaScript('localStorage.setItem("key", "value");')
+                  .then((_) => debugPrint("localStorage set successfully"))
+                  .catchError((error) =>
+                      debugPrint("Error setting localStorage: $error"));
+            }
           },
           onWebResourceError: (error) {
             setState(() {
@@ -37,19 +44,30 @@ class _AnnounceKitWidgetState extends State<AnnounceKitWidget> {
         ),
       );
 
-    _loadHtmlFromAssets();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHtmlFromFile();
+    });
   }
 
-  Future<void> _loadHtmlFromAssets() async {
+  Future<void> _loadHtmlFromFile() async {
     try {
-      final String htmlContent = await DefaultAssetBundle.of(context)
-          .loadString('assets/announcekit_widget.html');
-      await _controller.loadHtmlString(htmlContent);
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/web_content.html');
+
+      final String htmlContent =
+          await rootBundle.loadString('assets/announcekit_widget.html');
+
+      await tempFile.writeAsString(htmlContent);
+
+      final fileUrl = Uri.file(tempFile.path).toString();
+      debugPrint("Loading from file URL: $fileUrl");
+
+      await _controller.loadRequest(Uri.parse(fileUrl));
     } catch (e) {
       setState(() {
-        errorMessage = "Error loading HTML: $e";
+        errorMessage = "Error: $e";
       });
-      debugPrint("Error loading HTML: $e");
+      debugPrint("Error: $e");
     }
   }
 
@@ -61,7 +79,7 @@ class _AnnounceKitWidgetState extends State<AnnounceKitWidget> {
           ? Center(child: Text(errorMessage!))
           : WebViewWidget(controller: _controller),
       floatingActionButton: FloatingActionButton(
-        onPressed: _loadHtmlFromAssets,
+        onPressed: _loadHtmlFromFile,
         child: Icon(Icons.refresh),
       ),
     );
