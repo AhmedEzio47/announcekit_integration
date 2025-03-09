@@ -1,7 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class AnnounceKitWidget extends StatefulWidget {
@@ -51,18 +48,7 @@ class _AnnounceKitWidgetState extends State<AnnounceKitWidget> {
 
   Future<void> _loadHtmlFromFile() async {
     try {
-      final tempDir = await getTemporaryDirectory();
-      final tempFile = File('${tempDir.path}/web_content.html');
-
-      final String htmlContent =
-          await rootBundle.loadString('assets/announcekit_widget.html');
-
-      await tempFile.writeAsString(htmlContent);
-
-      final fileUrl = Uri.file(tempFile.path).toString();
-      debugPrint("Loading from file URL: $fileUrl");
-
-      await _controller.loadRequest(Uri.parse(fileUrl));
+      await _controller.loadFlutterAsset('assets/announcekit_widget.html');
     } catch (e) {
       setState(() {
         errorMessage = "Error: $e";
@@ -78,10 +64,6 @@ class _AnnounceKitWidgetState extends State<AnnounceKitWidget> {
       body: errorMessage != null
           ? Center(child: Text(errorMessage!))
           : WebViewWidget(controller: _controller),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _loadHtmlFromFile,
-        child: Icon(Icons.refresh),
-      ),
     );
   }
 }
